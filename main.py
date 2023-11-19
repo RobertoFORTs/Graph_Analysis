@@ -1,68 +1,76 @@
-import networkx as nx
 import random
 
 
 def criar_grafo(n, p):
-    grafo = nx.Graph()
-    vertices = list(range(n))
-    grafo.add_nodes_from(vertices)
+    # Dicionário para representar o grafo 0
+    # como um conjunto de adjacência
+    grafo = {i: set() for i in range(n)}
 
-    for u in vertices:
-        for v in vertices:
-            if u != v and random.random() <= p:
-                grafo.add_edge(u, v)
+    for u in range(n):
+        for v in range(u + 1, n):
+            if random.random() <= p:
+                grafo[u].add(v)
+                # Para um grafo não direcionado, precisamos adicionar em ambas direções
+                grafo[v].add(u)
 
     return grafo
 
 
 def calcular_metricas(grafo):
-    num_vertices = grafo.number_of_nodes()
-    num_arestas = grafo.number_of_edges()
-    graus = list(grafo.degree())
-    grau_minimo = min(graus, key=lambda x: x[1])[1]
-    grau_maximo = max(graus, key=lambda x: x[1])[1]
-    grau_medio = sum(dict(grafo.degree()).values()) / num_vertices
+    num_vertices = len(grafo)
+    arestas = sum(len(vizinhos) for vizinhos in grafo.values()
+                  ) // 2  # Contamos cada aresta apenas uma vez
+    graus = [len(vizinhos) for vizinhos in grafo.values()]
+    grau_minimo = min(graus)
+    grau_maximo = max(graus)
+    grau_medio = sum(graus) / num_vertices
 
-    # Verificar se o grafo é conectado
-    if nx.is_connected(grafo):
-        diametro = nx.diameter(grafo)
-    else:
-        # Se não for conectado, calcular o diâmetro da maior componente conectada
-        componentes_conectadas = list(nx.connected_components(grafo))
-        maior_componente = max(componentes_conectadas, key=len)
-        grafo_maior_componente = grafo.subgraph(maior_componente)
-        diametro = nx.diameter(grafo_maior_componente)
+    # Algoritmo para encontrar o diâmetro (usando busca em largura)
+    def bfs(start):
+        visitados = set()
+        fila = [(start, 0)]
+        max_distancia = 0
 
-    return num_vertices, num_arestas, grau_minimo, grau_maximo, grau_medio, diametro
+        while fila:
+            vertice, distancia = fila.pop(0)
+            if vertice not in visitados:
+                visitados.add(vertice)
+                max_distancia = max(max_distancia, distancia)
+
+                for vizinho in grafo[vertice]:
+                    if vizinho not in visitados:
+                        fila.append((vizinho, distancia + 1))
+
+        return max_distancia
+
+    diametro = max(bfs(v) for v in grafo)
+
+    return num_vertices, arestas, grau_minimo, grau_maximo, grau_medio, diametro
+
 
 def main():
     inc = int(input("Digite o valor de início (inc): "))
     fim = int(input("Digite o valor final (fim): "))
     stp = int(input("Digite o intervalo entre tamanhos (stp): "))
+
+    # Validando o valor de p
+    while True:
+        p = float(input(
+            "Digite o valor p entre 0 < p ≤ 0.25 indicando a probabilidade de incluir uma aresta no grafo: "))
+        if 0 < p <= 0.25:
+            break
+        else:
+            print("O valor de p deve estar no intervalo 0 < p ≤ 0.25. Tente novamente.")
+
     print("\nProcessando...\n")
-    print("{:<15} {:<15} {:<15} {:<15} {:<15} {:<15} {:<15}".format(
-        "n", "V", "E", "gmin", "gmax", "gmed", "diam"))
-    print("----------------------------------------------------")
+    print("{:<15} {:<15} {:<15} {:<15} {:<15} {:<15}".format(
+        "V", "E", "gmin", "gmax", "gmed", "diam"))
+    print("------------------------------------------------------------------------------------")
     for n in range(inc, fim+1, stp):
-        p = 0.25
         grafo = criar_grafo(n, p)
         metricas = calcular_metricas(grafo)
-
-        # print(f"Experimento com {n} vértices:")
-        # print(f"Número de vértices: {metricas[0]}")
-        # print(f"Número de arestas: {metricas[1]}")
-        # print(f"Grau mínimo: {metricas[2]}")
-        # print(f"Grau máximo: {metricas[3]}")
-        # print(f"Média dos graus: {metricas[4]}")
-        # print(f"Diâmetro: {metricas[5]}\n")
-        print("{:<15} {:<15} {:<15} {:<15} {:<15} {:<15.2f} {:<15}".format(
-            n, metricas[0], metricas[1], metricas[2], metricas[3], metricas[4], metricas[5]))
+        print("{:<15} {:<15} {:<15} {:<15} {:<15.2f} {:<15.2f}".format(*metricas))
 
 
 if __name__ == "__main__":
-    # ini = 10
-    # fim = 1000
-    # stp = 10
-    # p = 0.25
-
     main()

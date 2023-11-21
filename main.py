@@ -2,11 +2,13 @@
 import random
 
 
+import random
+
 def criar_grafo(n, p):
-    # Dicionário para representar o grafo 0
-    # como um conjunto de adjacência
+    # Dicionário para representar o grafo como um conjunto de adjacência
     grafo = {i: set() for i in range(n)}
 
+    # Loop para criar arestas com probabilidade p entre pares de vértices
     for u in range(n):
         for v in range(u + 1, n):
             if random.random() <= p:
@@ -16,34 +18,35 @@ def criar_grafo(n, p):
 
     return grafo
 
-
 def calcular_metricas(grafo):
     num_vertices = len(grafo)
-    arestas = sum(len(vizinhos) for vizinhos in grafo.values()
-                  ) // 2  # Contamos cada aresta apenas uma vez
+    # Contagem de arestas dividida por 2 para evitar a contagem duplicada em grafos não direcionados
+    arestas = sum(len(vizinhos) for vizinhos in grafo.values()) // 2
     graus = [len(vizinhos) for vizinhos in grafo.values()]
     grau_minimo = min(graus)
     grau_maximo = max(graus)
     grau_medio = sum(graus) / num_vertices
 
-    # Algoritmo para encontrar o diâmetro (usando busca em largura)
+    # Algoritmo para encontrar o diâmetro usando busca em largura
     def bfs(start):
         visitados = set()
-        fila = [(start, 0)]
+        fila = [(start, 0)]  # Inicializa a fila com o vértice de início e a distância 0
         max_distancia = 0
 
         while fila:
-            vertice, distancia = fila.pop(0)
+            vertice, distancia = fila.pop(0)  # Remove o primeiro elemento da fila
             if vertice not in visitados:
                 visitados.add(vertice)
                 max_distancia = max(max_distancia, distancia)
 
+                # Adiciona vizinhos não visitados à fila com a distância aumentada em 1
                 for vizinho in grafo[vertice]:
                     if vizinho not in visitados:
                         fila.append((vizinho, distancia + 1))
 
         return max_distancia
 
+    # Calcula o diâmetro como o máximo das distâncias encontradas por BFS a partir de cada vértice
     diametro = max(bfs(v) for v in grafo)
 
     return num_vertices, arestas, grau_minimo, grau_maximo, grau_medio, diametro
